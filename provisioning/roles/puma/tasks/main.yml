@@ -1,0 +1,102 @@
+- name:  Add Puma & Notify Gems In Gemfile.local
+  become: yes
+  become_user: root
+  template:
+    src: templates/Gemfile.local.j2
+    dest: "{{ redmine.path }}/Gemfile.local"
+    owner: "{{ redmine.group.name }}" 
+    group: "{{ redmine.group.name }}"
+    mode: 0644
+  tags: 
+    - install_puma
+
+- name: Bundle Install 
+  shell: "~/.rbenv/shims/bundle install"
+  args: 
+    chdir: "{{ redmine.path }}" 
+    executable: /bin/bash
+  tags:
+    - install_puma 
+
+- name:  Copy Puma Config File
+  become: yes
+  become_user: root
+  template:
+    src: templates/puma.rb.j2
+    dest: "{{ redmine.path }}/config/puma.rb"
+    owner: "{{ redmine.group.name }}"
+    group: "{{ redmine.group.name }}"
+    mode: 0644
+  tags: 
+    - install_puma
+
+- name: Check Puma.Service Exists 
+  stat: 
+    path: /etc/systemd/system/puma.service
+  register: puma_service_file
+  ignore_errors: yes 
+  tags: 
+    - install_puma
+    
+- name: Install Puma Service 
+  become: yes
+  become_user: root 
+  template:
+    src: templates/puma.service.j2
+    dest: /etc/systemd/system/puma.service
+    owner: root
+    group: root
+  tags: 
+    - install_puma
+  when: not puma_service_file.stat.exists 
+
+- name: Start Puma Service
+  become: yes
+  become_user: root 
+  systemd:
+    daemon_reload: yes
+    enabled: yes
+    state: started
+    name: puma.service
+  tags: 
+    - install_puma
+
+# ------- use puma directly ----------- # 
+
+# - name: Open Port 3000
+#   become: yes
+#   become_user: root
+#   shell: 'sudo ufw allow 3000/tcp'
+#   args:
+#     chdir: "{{ redmine.path }}"
+#     executable: /bin/bash
+#   tags:
+#     - web
+
+# - name: Check if Application Server is Up 
+#   shell: 'lsof -i :3000 -t'
+#   register: server_up
+#   ignore_errors: yes
+#   tags:
+#     - web
+
+# - name: Run Puma Server
+#   shell: ' ~/.rbenv/shims/bundle exec puma -C config/puma.rb -e production'
+#   args:
+#     chdir: "{{ redmine.path }}"
+#     executable: /bin/bash
+#   when: server_up.rc == 1 
+#   tags:
+#     - web
+
+# -----------_ Webrick Test ------------# 
+
+# - name: Run Test Server
+#   shell: ' ~/.rbenv/shims/bundle exec rails server -u webrick -e production -d'
+#   args:
+#     chdir: "{{ redmine.path }}"
+#     executable: /bin/bash
+#   when: server_up.rc == 1 
+#   tags:
+#     - test_webrick
+

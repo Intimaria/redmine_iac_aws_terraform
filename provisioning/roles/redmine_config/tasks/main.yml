@@ -1,0 +1,111 @@
+- name: Install Bundler                                                                                                                                                                                                            
+  shell: ~/.rbenv/shims/gem install bundler                                                                                                                                              
+  args: 
+    executable: /bin/bash
+  tags:
+    - ruby
+    - install_redmine
+
+# Takes ages, good to have but can comment out if needed
+# - name: Gem Update for System 
+#   shell: "~/.rbenv/shims/gem update --system"
+#   args: 
+#     chdir: "{{ redmine.path }}" 
+#     executable: /bin/bash
+#   tags:
+#     install_redmine
+
+- name: Set Local Path
+  shell: '~/.rbenv/shims/bundle config set 
+         --local path vendor/bundle'
+  args:
+    chdir: "{{ redmine.path }}"
+    executable: /bin/bash
+  tags:
+    install_redmine
+
+- name: Bundle Install 
+  shell: "~/.rbenv/shims/bundle install"
+  args: 
+    chdir: "{{ redmine.path }}" 
+    executable: /bin/bash
+  tags:
+    - install_redmine
+
+- name: Bundle Update 
+  shell: "~/.rbenv/shims/bundle update"
+  args: 
+    chdir: "{{ redmine.path }}" 
+    executable: /bin/bash
+  tags:
+    - install_redmine
+
+- name: Install Strscan
+  gem: 
+    name: strscan
+    state: latest
+    executable: "~/.rbenv/shims/gem"
+  tags:
+    - install_redmine
+
+- name: Install Io-Wait
+  gem: 
+    name: io-wait
+    state: latest
+    executable: "~/.rbenv/shims/gem"
+  tags:
+    - install_redmine
+
+- name: Create Gemfile.lock
+  become: yes
+  become_user: root
+  file: 
+    path: "{{ redmine.path }}/Gemfile.lock"
+    state: touch
+    owner: "{{ redmine.user.name }}"
+    group: "{{ redmine.group.name }}"
+    mode: 0644
+  tags:
+    - install_redmine
+
+- name: Generate Secret 
+  shell: '~/.rbenv/shims/bundle exec 
+          rake generate_secret_token'
+  args:
+    chdir: "{{ redmine.path }}"
+    executable: /bin/bash
+  tags:
+    - install_redmine
+
+- name: Rake DB Migrate
+  shell: 'RAILS_ENV=production ~/.rbenv/shims/bundle 
+          exec rake db:migrate'
+  args:
+    chdir: "{{ redmine.path }}"
+    executable: /bin/bash
+  tags:
+    - install_redmine
+
+- name: Rake Load Defaults
+  expect:
+    command: /bin/bash -c "~/.rbenv/shims/bundle 
+              exec rake redmine:load_default_data 
+              RAILS_ENV=production"
+    responses:
+      (.*)Select language(.*): en
+  args:
+    chdir: "{{ redmine.path }}"
+  register: load_defaults
+  ignore_errors: yes
+  tags:
+    - install_redmine
+
+- name: Make Tmp/Pdf
+  file:
+    path: "{{ redmine.path }}/tmp/pdf"
+    state: directory
+    owner: "{{ redmine.user.name }}"
+    group: "{{ redmine.group.name }}"
+    mode: 0755
+  tags:
+    - install_redmine

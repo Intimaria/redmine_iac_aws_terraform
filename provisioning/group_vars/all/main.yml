@@ -1,0 +1,17 @@
+# user_name: redmine
+# user_password: redmine
+# group_name: redmine
+# root_password: changeme
+# redmine_path: "/srv/redmine"
+redmine:
+  version: 5.0.1
+  path: "/srv/redmine"
+  db:
+    name: redmine
+    username: redmine
+    password: a10ngp455w0rd
+  user: 
+    name: redmine
+    password: redmine
+  group: 
+    name: redmine

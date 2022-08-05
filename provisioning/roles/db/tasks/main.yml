@@ -1,0 +1,70 @@
+- name: Start MySQL service
+  become: yes
+  service: 
+    name: mysql
+    state: started
+    enabled: yes
+  tags: 
+    - db
+    - secure_mysql
+
+- name: Set MySQL root Password
+  become: yes
+  become_user: root
+  mysql_user:
+    name: 'root'
+    password: '{{ redmine.db.root.password }}'
+    state: present
+  tags: 
+    - db
+    - secure_mysql
+
+- name: Copy MYSQL Config File
+  become: yes
+  become_user: root 
+  template:
+    src: templates/.my.cnf.j2
+    dest: /root/.my.cnf
+    owner: root
+    group: root
+    mode: 0600
+  tags: 
+    - db
+    - secure_mysql
+
+- name: Remove Anonymous User Aaccounts
+  become: yes
+  mysql_user:
+    name: ''
+    host_all: yes
+    state: absent
+  tags: 
+    - db
+    - secure_mysql
+
+- name: Create Redmine DB 
+  mysql_db:
+    login_host: localhost
+    login_user: root
+    login_password: "{{ redmine.db.root.password }}"
+    name: redmine 
+    state: present
+    encoding: utf8
+  tags: 
+    - db
+
+- name:  Create Redmine DB User
+  mysql_user:
+    login_host: localhost
+    login_user: root
+    login_password: "{{ redmine.db.root.password }}"
+    name: "{{ redmine.db.username }}"
+    password: "{{ redmine.db.password }}"
+    priv: 'redmine.*:ALL,GRANT'
+    state: present
+  loop:
+    - 127.0.0.1
+    - localhost
+    - '::1'
+  tags: 
+    - db

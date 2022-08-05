@@ -1,0 +1,31 @@
+---
+- name: Setup System
+  hosts: all
+  become: yes
+  become_user: root
+  roles: 
+    - system # APT update && upgrade -y
+    - user # Create a Redmine User
+
+# - name: Create Database
+#   hosts: all
+#   roles: 
+#     - db # Create a mySql database & user 
+
+- name: Install Redmine
+  hosts: all
+  become: yes
+  become_user: "{{ redmine.user.name }}"
+  roles: 
+    - rbenv # Install rbenv
+    - redmine_download # Download Redmine & Copy DB config
+    - ruby # Install Ruby & Bundler 
+    - redmine_config # Run Bundler, Install Gems, Rake DB, Server Up
+    - puma # install puma gem, add puma service & reload
+
+- name: Nginx
+  hosts: all 
+  roles: 
+    - nginx_install # GPG & Repo config & install package
+    - nginx_serve # Configure & run reverse proxy service
+

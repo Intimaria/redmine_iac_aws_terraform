@@ -1,0 +1,24 @@
+- name: Check Installed Ruby 
+  shell: "~/.rbenv/bin/rbenv versions | grep {{ default_ruby }}"
+  register: ruby_installed
+  ignore_errors: yes
+  tags:
+    - ruby 
+    - install_redmine
+
+- name: Install Ruby
+  shell: "~/.rbenv/bin/rbenv install {{ default_ruby }} -k"
+  when: "ruby_installed.rc == 1"
+  tags:
+    - ruby 
+    - install_redmine
+
+- name: Global Ruby Version
+  shell: "~/.rbenv/bin/rbenv global {{ default_ruby }}"
+  ignore_errors: yes
+  tags:
+    - ruby 
+    - install_redmine
+
+
+

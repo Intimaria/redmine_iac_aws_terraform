@@ -1,0 +1,11 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: delegated
+platforms:
+  - name: ubuntu/bionic64
+provisioner:
+  name: ansible
+verifier:
+  name: ansible

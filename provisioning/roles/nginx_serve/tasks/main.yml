@@ -1,0 +1,70 @@
+# - name: insert nginx conf file 
+
+- name: Make sure www-data part of www-data group
+  become: yes
+  user:
+    name: www-data
+    groups: 
+      - www-data 
+      - "{{ redmine.group.name }}"
+    append: yes
+  
+- name: Make Symlink to Redmine Public
+  become: yes
+  file:
+    src: "{{ redmine.path }}/public"
+    dest: /var/www/html/redmine
+    state: link
+
+# - name: Chown folder contents to www-data group
+#   become: yes
+#   become_user: root
+#   shell: chown -R www-data:www-data /var/www/html/redmine/ 
+#   args:
+#     executable: /bin/bash
+
+# - name: Chown folder contents to www-data group
+#   become: yes
+#   become_user: root
+#   shell: chmod -R 0755 /var/www/html/redmine/
+#   args:
+#     executable: /bin/bash
+
+- name: Copy Nginx Config File
+  become: yes
+  become_user: root
+  copy:
+    src: templates/redmine.conf.j2
+    dest: /etc/nginx/sites-available/redmine.conf
+
+- name: Make Symlink to sites enabled 
+  become: yes
+  file:
+    src: /etc/nginx/sites-available/redmine.conf
+    dest: /etc/nginx/sites-enabled/redmine.conf
+    state: link
+
+- name: Remove Default Link
+  become: yes
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+
+- name: Reload Nginx service
+  become: yes
+  service: 
+    name: nginx
+    daemon_reload: yes
+
+- name: Stop Nginx service
+  become: yes
+  service: 
+    name: nginx
+    state: stopped
+
+- name: Restart Nginx service
+  become: yes
+  service: 
+    name: nginx
+    state: started
+    enabled: yes

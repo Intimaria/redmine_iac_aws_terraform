@@ -1,0 +1,6 @@
+- name: EBS
+  hosts: all
+  become: yes
+  roles: 
+    - umount
+    - { role: mount, when: not detach | bool }

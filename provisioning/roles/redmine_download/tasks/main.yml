@@ -1,0 +1,49 @@
+- name: Include Distro Specific Packages.
+  include_vars: "db_host.yml"
+
+
+- name: Check If Redmine Already Downloaded
+  stat: 
+    path: "{{ redmine.path }}"
+  register: downloaded 
+  ignore_errors: yes
+  tags: 
+    - install_redmine
+
+- name: Download Resource and Untar File 
+  become: yes
+  become_user: root
+  unarchive:
+    src: "https://redmine.org/releases/redmine-{{ redmine.version }}.tar.gz"
+    dest: "/srv"
+    owner: "{{ redmine.group.name }}"
+    group: "{{ redmine.group.name }}"
+    mode: 0755
+    remote_src: yes
+  when: not downloaded.stat.exists
+  tags: 
+    - install_redmine
+
+- name: Make Symlink to Redmine 
+  become: yes
+  become_user: root
+  file:
+    src: "{{ redmine.path }}-{{ redmine.version }}"
+    dest: "{{ redmine.path }}"
+    state: link
+  tags: 
+    - install_redmine
+
+- name: Delete Tarfile
+  file:
+    state: absent
+    path: "{{ redmine.path }}-{{ redmine.version }}.tar.gz"
+  tags: 
+    - install_redmine
+
+- name: Copy DB Config File
+  template:
+    src: templates/database.yml.j2
+    dest: "{{ redmine.path }}/config/database.yml"
+  tags: 
+    - install_redmine

@@ -1,0 +1,55 @@
+- name: Get the EBS volume/block 
+  shell: lsblk -x SIZE | grep disk | tail -1 | awk '{print $1}'
+  register: ebs_nvme_block
+  check_mode: false
+
+- name: Printout the block 
+  debug: 
+    var: ebs_nvme_block.stdout_lines[0]
+
+- name: Create a xfs filesystem on EBS volume 
+  become: yes
+  filesystem:
+    fstype: xfs
+    dev: "/dev/{{ ebs_nvme_block.stdout_lines[0] }}"
+  ignore_errors: "{{ ansible_check_mode }}"
+  tags: 
+    - format
+
+- name: Get UUID of ebs volume 
+  shell: lsblk -o +UUID | grep "{{ ebs_nvme_block.stdout_lines[0] }}" |  awk '{print $NF}'
+  register: uuid
+  check_mode: false
+
+- name: Print UUID 
+  debug:
+    var: uuid.stdout
+
+- name: Mount the ebs volume on directory 
+  become: yes 
+  mount:
+    backup: yes
+    path:  "{{ mount_path }}"
+    src: "/dev/{{ ebs_nvme_block.stdout_lines[0] }}" # or use UUID={{ uuid.stdout }}
+    state: mounted
+    opts: defaults,nofail
+    dump: 0
+    passno: 2
+    fstype: xfs
+  ignore_errors: "{{ ansible_check_mode }}"
+
+- name: Chown mounted directory
+  become: yes
+  file:
+    path: "{{ mount_path }}"
+    owner: redmine
+    group: redmine
+    mode: 0755
+
+- name: add line to fstab file 
+  become: yes
+  lineinfile:
+    path: /etc/fstab
+    insertafter: EOF 
+    line:  "/dev/{{ ebs_nvme_block.stdout_lines[0] }}  {{ mount_path }}  xfs  defaults,nofail  0 2"
+    #line:  "UUID={{ uuid.stdout }}  {{ mount_path }}  xfs  defaults,nofail  0 2"

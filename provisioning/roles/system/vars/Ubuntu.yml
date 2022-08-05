@@ -1,0 +1,22 @@
+rbenv_dependencies: 
+  - git
+  - curl
+  - libssl-dev
+  - libreadline-dev
+  - zlib1g-dev
+  - autoconf
+  - bison
+  - build-essential
+  - libyaml-dev
+  - libncurses5-dev
+  - libffi-dev
+  - libgdbm-dev
+  - libreadline6-dev 
+  - zlib1g-dev 
+
+  
+redmine_dependencies:
+  - libmysqlclient-dev
+  - mysql-server
+  - python3-mysqldb
+  - acl

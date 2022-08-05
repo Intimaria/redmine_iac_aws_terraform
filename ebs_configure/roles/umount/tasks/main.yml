@@ -1,0 +1,12 @@
+
+- name: unmount files directory if mounted 
+  become: yes
+  shell: "umount -l {{ mount_path }}"
+  ignore_errors: yes
+
+- name: Make sure remove prior entries from fstab file
+  become: yes
+  lineinfile:
+    path: /etc/fstab
+    state: absent
+    regexp: "(.*){{ mount_path }}(.*)"

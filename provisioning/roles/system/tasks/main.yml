@@ -1,0 +1,31 @@
+- name: Include Distro Specific Packages.
+  include_vars: "{{ ansible_facts['distribution'] }}.yml"
+
+- name: System Update && Upgrade
+  become: yes
+  package:
+    upgrade: yes
+    update_cache: yes
+    cache_valid_time: 3600 
+  register: task_result
+
+- name: Package Install Rbenv Dependencies 
+  become: yes
+  package:
+    name: "{{ item }}"
+    state: present 
+  loop: "{{ rbenv_dependencies }}"
+
+- name: Package Install Redmine Dependencies
+  become: yes 
+  package:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ redmine_dependencies }}"
+
+    
+- name: Reboot System
+  become: yes 
+  reboot:
+  when: task_result is changed
+
